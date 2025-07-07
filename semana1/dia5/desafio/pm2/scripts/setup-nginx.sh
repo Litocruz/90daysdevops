@@ -3,7 +3,7 @@
 # eCommerce DevOps - Setup Nginx Simple
 # 90 Days of DevOps Challenge by Roxs
 
-LOG="ecommerce.log"
+LOG=./ecommerce.log
 export DEBIAN_FRONTEND=noninteractive
 configure-nginx(){
   echo "🌐 Configurando Nginx..." | tee -a $LOG
@@ -78,11 +78,11 @@ EOF
   systemctl restart nginx >> $LOG 2>&1
 }
 
-configurar-nginx
+configure-nginx
 echo "✅ Nginx configurado en puerto 80"
 echo "🌐 URLs:"
 echo "  • App completa: http://192.168.56.12"
 echo "  • Productos: http://192.168.56.12/products/"
 echo "  • Shopping cart: http://192.168.56.12/shopping-cart/"
 echo "  • Merchandise: http://192.168.56.12/mercandise/"
-echo "  • Docs: http://192.168.56.12/docs"
+echo "  • HealthCheck: http://192.168.56.12/health"
