@@ -75,6 +75,7 @@ EOF
   
   systemctl enable nginx >> $LOG 2>&1
   systemctl start nginx >> $LOG 2>&1
+  systemctl restart nginx >> $LOG 2>&1
 }
 
 configurar-nginx
