@@ -1,0 +1,46 @@
+# Ejemplo de solución parcial
+- name: Desplegar landing page
+  become: true
+  hosts: all
+
+  tasks:
+    - name: Instalar paquetes esenciales
+      apt:
+        name: ["git", "tree", "htop", "nginx"]
+        state: present
+        update_cache: yes
+
+    # NUEVA TAREA: Instalar passlib para el manejo de contraseñas
+    #  - name: Instalar passlib para crear usuarios con contraseña
+    #    ansible.builtin.apt:
+    #      name: python3-passlib # Para Ubuntu/Debian, este es el paquete con passlib
+    #      state: present
+    #      update_cache: yes
+      # Si Ansible está usando pip, podrías usar:
+      # ansible.builtin.pip:
+      #   name: passlib
+      #   state: present
+
+
+    - name: Crear usuario admin
+      user:
+        name: admin
+        groups: sudo
+        append: yes
+        password: "{{ 'admin123' | password_hash('sha512') }}"
+    - name: Copiar HTML
+      copy:
+        src: ../files/index.html
+        dest: /var/www/html/tareapractica/
+
+    - name: Copiar NGINX
+      copy:
+        src: ../files/nginx.conf
+        dest: /etc/nginx/sites-available/
+
+
+    - name: Habilitar firewall
+      ufw:
+        rule: allow
+        port: "22,80,443"
+        proto: tcp
