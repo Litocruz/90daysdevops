@@ -1,0 +1,8 @@
+---
+- name: Despliegue 
+  hosts: all
+  become: yes
+  roles:
+    - nginx
+    - user
+
