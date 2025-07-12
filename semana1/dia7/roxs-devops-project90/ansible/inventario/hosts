@@ -1,0 +1,10 @@
+[webservers]
+192.168.56.10 
+192.168.56.11  
+#192.168.56.10 ansible_user=vagrant ansible_ssh_private_key_file=/home/jlamadrid/code/90daysdevos/semana1/dia6/mi-proyecto-ansible/.vagrant/machines/default/virtualbox/private_key
+#
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
+ansible_user=vagrant
+# La clave privada por defecto de Vagrant. Vagrant la gestiona, pero es buena práctica tenerla para depuración.
+ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key

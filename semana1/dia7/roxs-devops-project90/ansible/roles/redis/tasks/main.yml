@@ -1,0 +1,14 @@
+---
+- name: Instalar Redis
+  ansible.builtin.apt:
+    name: redis-server
+    state: present
+    update_cache: yes
+
+- name: Asegurar que el servicio Redis esté corriendo y habilitado
+  ansible.builtin.systemd:
+    name: redis-server
+    state: started
+    enabled: yes
+
+...

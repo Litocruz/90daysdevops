@@ -1,0 +1,29 @@
+---
+- name: Instalar PostgreSQL
+  ansible.builtin.apt:
+    name: "postgresql-{{ pg_version }}"
+    state: present
+    update_cache: yes
+
+- name: Asegurar que el servicio PostgreSQL esté corriendo
+  ansible.builtin.systemd:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Crear usuario de base de datos para la app
+  ansible.builtin.community.postgresql.postgresql_user:
+    db: postgres
+    name: "{{ pg_user }}"
+    password: "{{ pg_password }}"
+    state: present
+  become_user: postgres
+
+- name: Crear base de datos para la app
+  ansible.builtin.community.postgresql.postgresql_db:
+    name: "{{ pg_db }}"
+    owner: "{{ pg_user }}"
+    state: present
+  become_user: postgres
+
+...

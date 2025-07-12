@@ -1,0 +1,33 @@
+---
+- name: Clonar el repositorio de la aplicación
+  ansible.builtin.git:
+    repo: https://github.com/roxsross/roxs-devops-project90.git
+    dest: "{{ app_base_path }}" # Clona en la ruta base de la app
+    version: master
+    force: yes
+  become_user: vagrant
+
+- name: Instalar dependencias de Python para Flask Vote
+  ansible.builtin.pip:
+    requirements: "{{ app_base_path }}/vote/requirements.txt"
+    virtualenv: "{{ app_base_path }}/vote/.venv"
+    virtualenv_python: python3
+  become_user: vagrant
+
+- name: Crear script de inicio para Flask Vote (Gunicorn)
+  ansible.builtin.template:
+    src: vote_app.service.j2
+    dest: /etc/systemd/system/vote_app.service
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart Flask Vote
+
+- name: Iniciar y habilitar el servicio Flask Vote
+  ansible.builtin.systemd:
+    name: vote_app
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+...

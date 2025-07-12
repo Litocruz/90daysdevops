@@ -1,0 +1,22 @@
+---
+- name: Instalar dependencias de Node.js para Result
+  ansible.builtin.community.general.npm:
+    path: "{{ app_base_path }}/result"
+    state: present
+    ci: yes
+
+- name: Crear script de inicio para Node.js Result con PM2
+  ansible.builtin.shell: |
+    pm2 start index.js --name result-app -- -p {{ result_app_port }}
+    pm2 save
+  args:
+    chdir: "{{ app_base_path }}/result"
+    executable: /bin/bash
+  environment:
+    PGHOST: 127.0.0.1
+    PGUSER: "{{ pg_user }}"
+    PGPASSWORD: "{{ pg_password }}"
+    PGDATABASE: "{{ pg_db }}"
+  become_user: vagrant
+
+...

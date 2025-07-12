@@ -1,0 +1,29 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for common
+
+- name: Instalar dependencias
+  apt:
+    name: "{{ system_packages }}"
+    state: present
+    update_cache: yes
+
+- name: Instalar Node.js y npm
+  shell: curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt install -y nodejs
+  args:
+    executable: /bin/bash
+  when: ansible_distribution == 'Ubuntu'
+
+- name: Instalar PM2 global
+  npm:
+    name: pm2
+    global: yes
+    state: present
+
+- name: Clonar el repositorio de la app
+  ansible.builtin.git:
+    repo: https://github.com/roxsross/roxs-devops-project90.git
+    dest: /home/vagrant/app
+    version: master
+    force: yes
+  become_user: vagrant

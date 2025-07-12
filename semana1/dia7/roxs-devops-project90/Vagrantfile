@@ -1,0 +1,38 @@
+Vagconfig.vm.provider "virtualbox" do |vb|
+    vb.name = "devops-voting-app-vm"
+    vb.memory = "4096" # 4GB de RAM
+    vb.cpus = 2        # 2 núcleos de CPU
+  end
+config.vm.provider "virtualbox" do |vb|
+    vb.name = "devops-voting-app-vm"
+    vb.memory = "4096" # 4GB de RAM
+    vb.cpus = 2        # 2 núcleos de CPU
+  end
+rant.configure("2") do |config|
+  config.vm.box = "bento/ubuntu-24.04"
+  config.vm.network "private_network", ip: "192.168.56.10"
+  
+  # Provisionamiento con Ansible
+#  config.vm.provision "ansible" do |ansible|
+#    ansible.playbook = "playbook.yml"
+#    ansible.verbose = "v"
+#
+#    ansible.inventory_path = "./inventario/hosts" # Le dice a Vagrant que use tu inventario
+#    ansible.limit = "192.168.56.10"            # Limita a la IP específica que está en tu inventario y grupo
+#                                               # (o puedes usar ansible.limit = "webservers" si tu playbook apunta a 'all')
+#  end
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "devops-voting-app-vm"
+    vb.memory = "2048" # 4GB de RAM
+    vb.cpus = 1        # 2 núcleos de CPU
+  end
+
+  config.vm.provision "setup-system", type: "shell", path: "scripts/app.sh", privileged: true
+
+  config.vm.post_up_message = <<-MSG
+    🔴 ¡VM APP aplicacion lista!
+    ======================================
+    📱 90 Days of DevOps by Roxs 🚀
+  MSG
+end

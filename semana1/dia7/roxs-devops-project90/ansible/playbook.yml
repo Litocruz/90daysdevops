@@ -1,0 +1,12 @@
+---
+- name: Despliegue entorno app votacion
+  hosts: webservers
+  become: yes
+  roles:
+    - common
+    - postgresql
+    - redis
+    - flask_vote
+    - nodejs_worker
+    - nodejs_result
+
