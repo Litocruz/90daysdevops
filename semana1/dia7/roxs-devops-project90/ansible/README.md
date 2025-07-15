@@ -1,5 +1,5 @@
 # 🚀 Despliegue de la Aplicación de Votación con Vagrant y Ansible
-> Este **README.md** te guiará a través del proceso de clonar el repositorio, configurar el entorno de Vagrant y automatizar el despliegue de la aplicación de votación (Vote, Worker, Result) con Ansible.
+Este **README.md** te guiará a través del proceso de clonar el repositorio, configurar el entorno de Vagrant y automatizar el despliegue de la aplicación de votación (Vote, Worker, Result) con Ansible.
 
 # 🚀 Sistema de Votación: Despliegue Automatizado con Vagrant y Ansible
 
