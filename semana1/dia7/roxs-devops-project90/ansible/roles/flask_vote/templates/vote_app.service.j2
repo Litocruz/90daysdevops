@@ -5,9 +5,10 @@ After=network.target postgresql.service redis-server.service # Asegurar que DBs 
 [Service]
 User=vagrant
 Group=vagrant
-WorkingDirectory={{ app_base_path }}/vote
-Environment="REDIS_HOST=127.0.0.1"
-ExecStart={{ app_base_path }}/vote/.venv/bin/gunicorn --workers 4 --bind 0.0.0.0:{{ worker_app_port }} wsgi:app
+WorkingDirectory={{ app_base_path }}/{{ app_base_name }}/vote
+Environment="REDIS_HOST={{ redis_host }}"
+Environment="REDIS_PORT={{ redis_port }}"
+ExecStart={{ app_base_path }}/{{ app_base_name }}/vote/.venv/bin/gunicorn --workers 4 --bind 0.0.0.0:{{ vote_app_port }} app:app
 Restart=always
 StandardOutput=syslog
 StandardError=syslog

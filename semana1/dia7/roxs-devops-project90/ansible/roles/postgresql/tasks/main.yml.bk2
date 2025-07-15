@@ -1,0 +1,38 @@
+---
+- name: Instalar PostgreSQL
+  apt:
+    name: "postgresql-{{ pg_version }}"
+    state: present
+    update_cache: yes
+
+- name: Asegurarse de que el servicio PostgreSQL esté activo
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: "Crear base de datos {{ pg_db }}"
+  become: true
+  become_user: postgres
+  postgresql_db:
+    name: "{{ pg_db }}"
+    state: present
+
+- name: Crear usuario postgres (si no existe) y establecer contraseña
+  become: true
+  become_user: postgres
+  postgresql_user:
+    name: "{{ pg_user }}"
+    password: "{{ pg_password }}"
+    role_attr_flags: "LOGIN"
+
+- name: Otorgar todos los privilegios en la base de datos votes al usuario postgres
+  become: true
+  become_user: postgres
+  postgresql_privs:
+    db: "{{ pg_user }}"
+    roles: postgres
+    type: database
+    privs: ALL
+    state: present
+...

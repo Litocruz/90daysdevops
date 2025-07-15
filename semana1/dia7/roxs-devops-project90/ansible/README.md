@@ -1,28 +1,26 @@
-🚀 Despliegue de la Aplicación de Votación con Vagrant y Ansible
-Este README.md te guiará a través del proceso de clonar el repositorio, configurar el entorno de Vagrant y automatizar el despliegue de la aplicación de votación (Vote, Worker, Result) con Ansible.
+# 🚀 Despliegue de la Aplicación de Votación con Vagrant y Ansible
+> Este **README.md** te guiará a través del proceso de clonar el repositorio, configurar el entorno de Vagrant y automatizar el despliegue de la aplicación de votación (Vote, Worker, Result) con Ansible.
 
-📋 Pre-requisitos
+## 📋 Pre-requisitos
 Asegúrate de tener lo siguiente instalado en tu máquina anfitriona (tu notebook):
 
-Git: Para clonar el repositorio.
-
-Vagrant: Para provisionar y gestionar la máquina virtual.
-
-VirtualBox: El proveedor de virtualización para Vagrant.
-
-Ansible: Para automatizar el despliegue y la configuración.
-
-Python 3 y pip: Para las colecciones de Ansible y gestión de dependencias.
+✅ *Git*: Para clonar el repositorio.
+✅*Vagrant*: Para provisionar y gestionar la máquina virtual.
+✅*VirtualBox*: El proveedor de virtualización para Vagrant.
+✅*Ansible*: Para automatizar el despliegue y la configuración.
+✅*Python 3 y pip*: Para las colecciones de Ansible y gestión de dependencias.
 
 Colecciones de Ansible:
 
-Bash
-
+```Bash
 ansible-galaxy collection install community.general
 ansible-galaxy collection install community.postgresql
-🏗️ Estructura del Proyecto
+```
+
+## 🏗️ Estructura del Proyecto
 La estructura de tu proyecto será la siguiente, lo que facilita la co-localización de la aplicación y la infraestructura como código:
 
+```Bash
 roxs-devops-project90/           <-- Raíz del repositorio
 ├── .git/
 ├── Vagrantfile                  <-- Define tu VM de desarrollo
@@ -57,13 +55,14 @@ roxs-devops-project90/           <-- Raíz del repositorio
 ├── worker/                      <-- Código de la aplicación Node.js Worker
 ├── result/                      <-- Código de la aplicación Node.js Result
 └── README.md
-⚙️ Paso a Paso para la Configuración del Entorno
+```
+## ⚙️ Paso a Paso para la Configuración del Entorno
 Sigue estos pasos para levantar y configurar tu aplicación:
 
 Paso 1: Clonar el Repositorio e Inicializar la Estructura
 Clona el repositorio en tu máquina anfitriona:
 
-Bash
+```Bash
 
 git clone https://github.com/roxsross/roxs-devops-project90.git
 Navega al directorio del proyecto:

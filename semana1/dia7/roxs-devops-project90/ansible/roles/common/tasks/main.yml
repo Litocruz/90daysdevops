@@ -21,9 +21,9 @@
     state: present
 
 - name: Clonar el repositorio de la app
-  ansible.builtin.git:
-    repo: https://github.com/roxsross/roxs-devops-project90.git
-    dest: /home/vagrant/app
+  git:
+    repo: "{{ repo }}"
+    dest: "{{ app_base_path }}"
     version: master
     force: yes
-  become_user: vagrant
+  become_user: "{{ ansible_user }}"

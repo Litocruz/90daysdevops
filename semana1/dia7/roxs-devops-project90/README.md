@@ -1,201 +1,246 @@
+# 🚀 Despliegue de la Aplicación de Votación con Vagrant y Ansible
 
-# 🚀 90 Días de DevOps con Roxs
-
-![](https://media.licdn.com/dms/image/v2/D4D16AQF4ND-cC_uxZg/profile-displaybackgroundimage-shrink_350_1400/profile-displaybackgroundimage-shrink_350_1400/0/1731367727725?e=1753920000&v=beta&t=80SZ4IOx4V_VDcCBli7aFjYuMhzMos9SRFq8GnV8zc4)
-
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](https://docker.com)
-[![Node.js](https://img.shields.io/badge/Node.js-Worker-green?logo=node.js)](https://nodejs.org)
-[![Node.js](https://img.shields.io/badge/Node.js-Result-green?logo=node.js)](https://nodejs.org)
-[![Flask](https://img.shields.io/badge/Flask-Vote-lightgrey?logo=flask)](https://flask.palletsprojects.com/)
-[![Redis](https://img.shields.io/badge/Redis-Cache-red?logo=redis)](https://redis.io)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue?logo=postgresql)](https://postgresql.org)
-[![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-orange?logo=prometheus)](https://prometheus.io)
-[![Grafana](https://img.shields.io/badge/Grafana-Visualization-orange?logo=grafana)](https://grafana.com)
-
-> **Proyecto educativo de DevOps** creado por **roxsross** para aprender conceptos fundamentales de desarrollo, contenedores, orquestación y monitoreo.
-> ℹ️ Este repositorio parte del [Docker Example Voting App](https://github.com/dockersamples/example-voting-app) y ha sido mejorado y adaptado por **roxsross** para el desafío 90 Días de DevOps.
-
-
-## 🔥 ¿Por qué sumarte?
-
-Porque **aprender DevOps no tiene por qué ser aburrido ni costoso**.  
-En este desafío vas a construir, romper y mejorar una app real... **¡con tus propias manos!**  
-Con cada semana vas a aprender algo nuevo, y lo más importante: **vas a aplicarlo al instante**.  
-
-📢 *"Si no lo deployás, no lo aprendiste."* — Roxs
-
-## 📸 Screenshots del Ecosistema ROXS
-
-<div align="center">
-
-| 📦 Aplicación Principal | 📋 Resultados | 📊 🏠 Grafana Home | 🐳 Docker Containers |
-|:---:|:---:|:---:|:---:|
-| <img src="./docs/2.png" width="200"/> | <img src="./docs/1.png" width="200"/> | <img src="./docs/3.png" width="200"/> | <img src="./docs/4.png" width="200"/> |
-| *Sistema de Votación* | *Web Resultados* | *Dash Grafana* | *Contenedores onfire* |
-
-</div>
+Este `README.md` es tu guía completa para desplegar la aplicación de votación (`Vote`, `Worker`, `Result`) utilizando **Vagrant** para el entorno virtual y **Ansible** para la automatización. No solo te mostrará los pasos de despliegue, sino que también documenta los **problemas comunes que encontramos y sus soluciones**, lo que te ahorrará muchísimas horas de depuración.
 
 ---
 
-## 🧩 Arquitectura de la Aplicación
+## 🎯 Arquitectura de la Aplicación
 
-Este repositorio incluye el código base de una aplicación distribuida, compuesta por tres servicios:
+La aplicación se compone de varios servicios que se conectan entre sí:
 
-![](./docs/5.png)
+* **Vote (Flask):** Es la interfaz de usuario para que la gente vote. Se comunica con Redis.
+* **Redis:** Una base de datos ultrarrápida en memoria que funciona como una cola para almacenar los votos temporalmente.
+* **Worker (Node.js):** Toma los votos de Redis, los procesa y los guarda en PostgreSQL.
+* **PostgreSQL:** La base de datos persistente que almacena los resultados finales de las votaciones.
+* **Result (Node.js):** Otra interfaz de usuario, esta vez para ver los resultados que están en PostgreSQL.
 
-- **Vote** : Servicio en Flask que permite votar (🐱 o 🐶) y publica los votos en Redis.
-- **Worker** : Servicio Node.js que consume votos desde Redis y los guarda en PostgreSQL.
-- **Result** : App Node.js que muestra los resultados en tiempo real usando WebSockets.
-
-### 📦 Versiones recomendadas de los servicios
-
-| Servicio | Lenguaje/Framework | Versión recomendada |
-|----------|--------------------|---------------------|
-| Vote     | Flask (Python)     | Python 3.13+, Flask 3.3+ |
-| Worker   | Node.js            | Node.js 20.x+            |
-| Result   | Node.js            | Node.js 20.x+            |
-| Redis    | Redis                | Redis 6.x+                 |
-| PostgreSQL| PostgreSQL          | PostgreSQL 15.x+           |
-
-> ⚠️ Usar versiones iguales o superiores a las recomendadas asegura compatibilidad y soporte con las dependencias del proyecto.
----
-
-## 🛠️ ¿Qué vas a construir?
-
-A lo largo del programa, vos vas a encargarte de:
-
-✅ Crear tus propios archivos `docker-compose.yml`  
-✅ Automatizar la configuración con Ansible  
-✅ Desplegar todo en local usando Terraform Provider Local  
-✅ Crear pipelines CI/CD con GitHub Actions  
-✅ Orquestar la app en Kubernetes  
-✅ Monitorear con Prometheus y Grafana  
-✅ (Opcional) Llevarlo a AWS
+![Arquitectura de la aplicación de votación](docs/app_architecture.png)
+*(Aquí iría una imagen que muestre el flujo: Vote -> Redis -> Worker -> PostgreSQL y Result -> PostgreSQL)*
 
 ---
 
-## 📂 Estructura del Repositorio
+## 📋 Pre-requisitos
 
-```bash
-.
-├── vote/             # Flask app (app.py)
-├── worker/           # Worker Node.js (main.js)
-├── result/           # Resultados en tiempo real (main.js)
-├── views/            # HTML y frontend
-├── load-testing/     # Pruebas de Carga y rendimiento con k6
-├── README.md         # Este archivo ;)
-````
+Antes de empezar, asegúrate de tener todo esto instalado en tu **máquina anfitriona** (tu notebook):
 
-> ⚠️ No se incluyen archivos de Docker, Terraform o CI/CD. Vos los vas a construir paso a paso como parte del desafío.
-
----
-
-## 🗓️ Programa Semana a Semana
-
-| Semana | Tema Clave                                 | Proyecto a construir                         |
-| ------ | ------------------------------------------ | -------------------------------------------- |
-| 1      | Linux + Vagrant + Ansible                  | Levantar app sin Docker usando Vagrant       |
-| 2      | Docker y Docker Compose                    | Crear los Dockerfiles y `docker-compose.yml` |
-| 3      | GitHub Actions CI/CD                       | Automatizar builds con self-hosted runner    |
-| 4      | Terraform (Provider Local)                 | Crear infraestructura local con Terraform    |
-| 5      | Kubernetes local con Minikube              | Desplegar app dockerizada en clúster local   |
-| 6      | Despliegue con CI/CD a Kubernetes          | Automatizar despliegues en k8s               |
-| 7      | Seguridad en Contenedores                  | Integrar herramientas de vulnerabilidades    |
-| 8      | Troubleshooting + Performance              | Debug y tuning de recursos                   |
-| 9      | Despliegue en la Nube (EC2/EKS - Opcional) | Llevar tu app a AWS                          |
+* **Git**: Para descargar el código del proyecto.
+* **Vagrant**: Para crear y gestionar tu máquina virtual de desarrollo.
+* **VirtualBox**: El programa que Vagrant usa para crear la máquina virtual.
+* **Ansible**: La herramienta de automatización.
+* **Python 3** y **pip**: Necesarios para que Ansible funcione correctamente y para gestionar librerías.
+* **Colecciones de Ansible**: ¡Súper importantes! Instálalas **en tu máquina anfitriona** (donde ejecutas los comandos):
+    ```bash
+    ansible-galaxy collection install community.general
+    ansible-galaxy collection install community.postgresql
+    ```
 
 ---
 
-## 🤘 ¿Cómo empiezo?
+## 🏗️ Estructura del Proyecto
 
-Cloná el repo y seguí el material semanal en el sitio del programa.
+Mantener una buena estructura de directorios es clave. Así es como se organiza el proyecto para que todo funcione sin problemas:
 
-```bash
-git clone https://github.com/roxsross/roxs-devops-project90.git
-cd roxs-devops-project90
-```
+oxs-devops-project90/           <-- La carpeta principal que clonas
+├── .git/
+├── Vagrantfile                  <-- Define tu máquina virtual (VM)
+├── ansible/                     <-- Aquí va toda la configuración de Ansible
+│   ├── ansible.cfg              <-- Archivo de configuración global de Ansible para este proyecto
+│   ├── playbook.yml             <-- El "guion" principal de Ansible para desplegar la app
+│   ├── inventario/
+│   │   ├── hosts                <-- Tu lista de servidores (VMs)
+│   │   └── ssh_config_for_ansible # Archivo SSH generado por Vagrant (no lo tocas)
+│   ├── group_vars/
+│   │   └── webservers.yml       <-- Variables específicas para tu grupo de servidores web
+│   └── roles/                   <-- Aquí se organizan las tareas por funciones
+│       ├── common/              <-- Rol: Configura el sistema base, Node.js, PM2, etc.
+│       │   ├── tasks/main.yml
+│       │   └── ...
+│       ├── postgresql/          <-- Rol: Instala y configura PostgreSQL
+│       │   ├── tasks/main.yml
+│       │   └── ...
+│       ├── redis/               <-- Rol: Instala y configura Redis
+│       │   └── tasks/main.yml
+│       ├── flask_vote/          <-- Rol: Despliega la app Flask 'Vote'
+│       │   ├── tasks/main.yml
+│       │   ├── templates/vote_app.service.j2 # Plantilla para el servicio systemd
+│       │   └── handlers/main.yml
+│       ├── nodejs_worker/       <-- Rol: Despliega la app Node.js 'Worker'
+│       │   └── tasks/main.yml
+│       └── nodejs_result/       <-- Rol: Despliega la app Node.js 'Result'
+│           └── tasks/main.yml
+├── vote/                        <-- Código de la aplicación Flask
+├── worker/                      <-- Código de la aplicación Node.js Worker
+├── result/                      <-- Código de la aplicación Node.js Result
+└── README.md
 
-El código está listo para que lo personalices, dockerices y automatices.
+## ⚙️ Paso a Paso para el Despliegue Automatizado
 
+¡Vamos a configurar todo!
+
+### Paso 1: Clonar el Repositorio y Preparar Carpetas
+
+1.  **Clona el repositorio** en tu máquina anfitriona:
+    ```bash
+    git clone [https://github.com/roxsross/roxs-devops-project90.git](https://github.com/roxsross/roxs-devops-project90.git)
+    ```
+
+2.  **Entra al directorio** del proyecto:
+    ```bash
+    cd roxs-devops-project90
+    ```
+
+3.  **Crea las carpetas de Ansible** (si no existen):
+    ```bash
+    mkdir -p ansible/inventario ansible/group_vars ansible/roles/{common/{tasks,handlers,templates},postgresql/tasks,redis/tasks,flask_vote/{tasks,handlers,templates},nodejs_worker/tasks,nodejs_result/tasks}
+    ```
+
+### Paso 2: Configurar Archivos Clave
+
+Aquí es donde le decimos a Vagrant y Ansible cómo trabajar juntos.
+
+1.  **`Vagrantfile`**: Crea este archivo en la **raíz del repositorio**.
+    ```ruby
+    Vagrant.configure("2") do |config|
+      config.vm.box = "bento/ubuntu-22.04" # Usa la versión 22.04 para mayor estabilidad
+      config.vm.network "private_network", ip: "192.168.56.10" # IP de tu VM
+
+      config.vm.provider "virtualbox" do |vb|
+        vb.name = "devops-voting-app-vm"
+        vb.memory = "4096" # 4GB de RAM para todos los servicios
+        vb.cpus = 2        # 2 núcleos de CPU
+      end
+
+      config.vm.provision "ansible" do |ansible|
+        ansible.playbook = "ansible/playbook.yml"
+        ansible.verbose = "v"
+        ansible.inventory_path = "ansible/inventario/hosts" # Usa tu inventario custom
+        ansible.limit = "192.168.56.10" # Limita al host específico de tu inventario
+        ansible.config_file = "ansible/ansible.cfg" # Apunta a tu ansible.cfg del proyecto
+      end
+
+      config.vm.post_up_message = <<-MSG
+🔴 ¡VM de la Aplicación de Votación lista!
+======================================
+Para acceder a la app Vote: [http://192.168.56.10:5000](http://192.168.56.10:5000)
+Para acceder a la app Result: [http://192.168.56.10:8000](http://192.168.56.10:8000)
+MSG
+    end
+    ```
+
+2.  **`ansible/ansible.cfg`**: Crea este archivo en la carpeta `ansible/`.
+    ```ini
+    [defaults]
+    inventory = inventario/hosts
+    roles_path = roles
+    collections_path = /usr/lib/python3/dist-packages/ # Ruta ABSOLUTA donde ansible-galaxy instala colecciones
+
+    [privilege_escalation]
+    become = True
+    become_method = sudo
+    become_user = root
+    become_ask_pass = False
+    _tee_use_sudo_nopasswd = False # Solución clave para el error 'chmod: invalid mode'
+    ```
+
+3.  **`ansible/inventario/hosts`**: Crea este archivo en `ansible/inventario/`.
+    ```ini
+    [webservers]
+    192.168.56.10
+
+    [all:vars]
+    ansible_python_interpreter=/usr/bin/python3
+    ansible_user=vagrant
+    ansible_ssh_private_key_file=.vagrant/machines/default/virtualbox/private_key # Ruta relativa a la raíz del proyecto
+    # ansible_become_flags='-H -T /var/tmp' # Descomentar solo si el error 'chmod: invalid mode' persiste
+    ```
+
+4.  **`ansible/group_vars/webservers.yml`**: Crea este archivo en `ansible/group_vars/`. Aquí definimos las variables para los servicios.
+    ```yaml
+    ---
+    # Variables generales del sistema
+    system_packages:
+      - git
+      - curl
+      - build-essential
+      - python3-venv
+      - python3-virtualenv # Para el módulo pip de Ansible
+      - postgresql-client
+      - net-tools
+      - python3-psycopg2   # Para que Ansible pueda hablar con PostgreSQL
+      - acl                # Para ayudar con permisos de archivos temporales
+
+    # Configuración de PostgreSQL
+    pg_version: "14"
+    pg_user: "dbuser"
+    pg_password: "dbpassword"
+    pg_db: "votingapp"
+    pg_host: "127.0.0.1" # Host de la DB (PostgreSQL corre en la misma VM)
+    pg_port: 5432        # Puerto por defecto de PostgreSQL
+
+    # Configuración de Redis
+    redis_port: 6379
+    redis_host: "127.0.0.1" # Host de Redis (Redis corre en la misma VM)
+
+    # Configuración de Node.js (para Worker y Result)
+    node_version: "18.x"
+    pm2_version: "latest"
+
+    # Rutas de la aplicación dentro de la VM
+    app_base_path: /opt/app
+
+    # Puertos de los servicios (accedidos desde el host)
+    vote_app_port: 5000   # Puerto para la app Flask Vote
+    worker_app_port: 8001 # Puerto interno para Gunicorn/Flask
+    result_app_port: 8000 # Puerto para la app Node.js Result
+    ```
+
+5.  **`ansible/playbook.yml`**: Crea este archivo en la carpeta `ansible/`. Este es el guion principal que orquesta todos los roles.
+    ```yaml
+    ---
+    - name: Desplegar entorno de aplicación de votación
+      hosts: webservers
+      become: yes # Ejecutar tareas con privilegios de superusuario
+
+      roles:
+        - common
+        - postgresql
+        - redis
+        - flask_vote
+        - nodejs_worker
+        - nodejs_result
+    ```
+
+### Paso 3: Definir los Roles de Ansible (Archivos de Tareas y Plantillas)
+
+Crea estos archivos dentro de las carpetas `tasks/main.yml`, `templates/*.j2` y `handlers/main.yml` de cada rol, según corresponda.
+
+#### `ansible/roles/common/tasks/main.yml`
+```yaml
 ---
+- name: Actualizar caché de apt
+  ansible.builtin.apt:
+    update_cache: yes
 
-## 📈 Bonus: Métricas y Observabilidad
+- name: Instalar paquetes básicos del sistema
+  ansible.builtin.apt:
+    name: "{{ system_packages }}"
+    state: present
 
-Todos los servicios están instrumentados con Prometheus. Podrás visualizar las métricas que vos mismo vas a recolectar y graficar con Grafana a partir de la semana 6.
+- name: Asegurar que el paquete 'acl' esté instalado
+  ansible.builtin.apt:
+    name: acl
+    state: present
 
----
-## 💪 Motivación: ¿Por qué hacer este desafío?
+- name: Instalar Node.js y npm (usando NodeSource PPA)
+  ansible.builtin.shell: |
+    curl -fsSL [https://deb.nodesource.com/setup](https://deb.nodesource.com/setup)_{{ node_version }} | sudo -E bash -
+    sudo apt-get install -y nodejs
+  args:
+    executable: /bin/bash
+  when: ansible_distribution == 'Ubuntu'
 
-Aprender DevOps puede parecer abrumador. Hay muchas herramientas, conceptos nuevos, y cientos de tutoriales que te dicen por dónde empezar… pero ninguno te lleva de la mano a construir algo real **desde cero**.
-
-Este programa no es teoría vacía. Vas a **construir una app real**, como lo harías en un equipo profesional.
-Acá vas a **equivocarte, arreglar, automatizar, monitorear y desplegar**.
-Y cuando termines, vas a poder decir con orgullo: **yo hice esto** 💥
-
-> 🧠 *"DevOps no se aprende en un curso, se aprende en la práctica. Y este es tu campo de juego."*
-
-
----
-
-
-## 🧰 Recursos complementarios (para cada herramienta)
-
-| Herramienta    | Documentación Oficial                                                                                  | Recurso Recomendado                                                                                         |
-| -------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| Docker         | [https://docs.docker.com/](https://docs.docker.com/)                                                   | [Docker Workshop](https://docs.docker.com/get-started/workshop/)                                                        |
-| Ansible        | [https://docs.ansible.com/](https://docs.ansible.com/)                                                 | [Ansible para principiantes](https://developers.redhat.com/products/ansible/getting-started)                         |
-| Terraform      | [https://developer.hashicorp.com/terraform/](https://developer.hashicorp.com/terraform/)               | [Guía de Terraform en español](https://learn.hashicorp.com/terraform)                                       |
-| Kubernetes     | [https://kubernetes.io/docs/home/](https://kubernetes.io/docs/home/)                                   | [Kubernetes The Hard Way (by Kelsey Hightower)](https://github.com/kelseyhightower/kubernetes-the-hard-way) |
-| GitHub Actions | [https://docs.github.com/actions](https://docs.github.com/actions)                                     | [Curso Gratuito GitHub Actions](https://docs.github.com/en/actions/quickstart)                              |
-| Prometheus     | [https://prometheus.io/docs/introduction/overview/](https://prometheus.io/docs/introduction/overview/) | [Observabilidad ](https://opentelemetry.io/es/docs/concepts/observability-primer/)                                   |
-| Grafana        | [https://grafana.com/docs/](https://grafana.com/docs/)                                                 | [Dashboards y Alertas con Grafana](https://grafana.com/tutorials/)                                          |
-| PostgreSQL     | [https://www.postgresql.org/docs/](https://www.postgresql.org/docs/)                                   | [PostgreSQL Tutorial](https://www.postgresqltutorial.com/)                                                  |
-| Redis          | [https://redis.io/docs/](https://redis.io/docs/)                                                       | [Aprendé Redis](https://redis.io/learn/howtos/quick-start)                                                           |
-
-> 🛠️ Tip: Agregá estos links como favoritos, los vas a necesitar cuando te enfrentes a errores reales 😉
-
----
-
-## 🗺️ DevOps Roadmap para Principiantes
-
-```
-✔️ 1. Entender Linux y la terminal
-✔️ 2. Automatizar entornos con Vagrant y Ansible
-✔️ 3. Construir imágenes con Docker
-✔️ 4. Orquestar servicios con Docker Compose
-✔️ 5. Crear pipelines con GitHub Actions
-✔️ 6. Definir infraestructura con Terraform
-✔️ 7. Desplegar en Kubernetes (local)
-✔️ 8. Agregar métricas con Prometheus y Grafana
-✔️ 9. Aprender troubleshooting y performance
-✔️ 🔥 BONUS: Subir tu proyecto a la nube (AWS)
-```
-
-Roadmap que recomiendo seguir [DevOps](https://roadmap.sh/devops)
-
-### 🎯 Objetivo final:
-
-Tener un **portfolio técnico** completo y práctico, demostrando tus conocimientos en cada área del ciclo de vida DevOps.
-
----
-
-## 📄 Licencia
-
-Este proyecto está licenciado bajo MIT License - ver el archivo [LICENSE](LICENSE) para detalles.
-
-## 👨‍💻 Autor
-
-**roxsross** - Instructor DevOps y Cloud
-
-- 🐦 Twitter: [@roxsross](https://twitter.com/roxsross)
-- 🔗 LinkedIn: [roxsross](https://linkedin.com/in/roxsross)
-- ☕ Ko-fi [roxsross](https://ko-fi.com/roxsross)
-- ▶️ Youtube [295devops](https://www.youtube.com/@295devops)
-- 📧 Email: roxs@295devops.com
-
----
-
-> 💡 Si querés sumar este desafío a tu portfolio o como parte de tu onboarding, ¡hacelo con orgullo! 💥
-
-
-
+- name: Instalar PM2 globalmente
+  community.general.npm:
+    name: pm2
+    global: yes
+    state: present

@@ -1,29 +1,29 @@
 ---
 - name: Instalar dependencias de Node.js para Worker
-  ansible.builtin.community.general.npm:
-    path: "{{ app_base_path }}/worker"
+  community.general.npm:
+    path: "{{ app_base_path }}/{{ app_base_name }}/worker"
     state: present
     # Añadir esto para asegurar la instalación sin interacción
-    ci: yes
+    #ci: yes
 
 - name: Crear script de inicio para Node.js Worker con PM2
-  ansible.builtin.shell: |
-    pm2 start index.js --name worker-app
+  shell: |
+    pm2 start main.js --name worker-app -p {{ worker_app_port }}
     pm2 save
   args:
-    chdir: "{{ app_base_path }}/worker"
+    chdir: "{{ app_base_path }}/{{ app_base_name }}/worker"
     executable: /bin/bash
   environment:
-    PGHOST: 127.0.0.1
-    PGUSER: "{{ pg_user }}"
-    PGPASSWORD: "{{ pg_password }}"
-    PGDATABASE: "{{ pg_db }}"
-    REDIS_HOST: 127.0.0.1
+    DATABASE_HOST: "{{ pg_host }}"
+    DATABASE_USER: "{{ pg_user }}"
+    DATABASE_PASSWORD: "{{ pg_password }}"
+    DATABASE_NAME: "{{ pg_db }}"
+    REDIS_HOST: "{{ redis_host }}"
     REDIS_PORT: "{{ redis_port }}"
   become_user: vagrant
 
 - name: Asegurar que PM2 esté configurado para iniciar al arranque
-  ansible.builtin.shell: |
+  shell: |
     pm2 startup systemd -u vagrant --hp /home/vagrant
     pm2 save
   args:
