@@ -19,6 +19,7 @@
     DATABASE_PASSWORD: "{{ pg_password }}"
     DATABASE_NAME: "{{ pg_db }}"
     DATABASE_PORT: "{{ pg_port }}"
+    PGPORT: "{{ pg_port }}"
   become_user: "{{ ansible_user }}"
 
 ...
