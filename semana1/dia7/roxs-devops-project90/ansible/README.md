@@ -1,6 +1,40 @@
 # 🚀 Despliegue de la Aplicación de Votación con Vagrant y Ansible
 > Este **README.md** te guiará a través del proceso de clonar el repositorio, configurar el entorno de Vagrant y automatizar el despliegue de la aplicación de votación (Vote, Worker, Result) con Ansible.
 
+# 🚀 Sistema de Votación: Despliegue Automatizado con Vagrant y Ansible
+
+Este proyecto implementa un sistema de votación simple con una arquitectura de microservicios, automatizando su despliegue y configuración en una máquina virtual utilizando Vagrant y Ansible.
+
+---
+
+## 🎯 Arquitectura del Sistema
+
+El sistema se compone de tres servicios principales que interactúan a través de Redis y PostgreSQL:
+
+* **`Vote` (Flask/Python)**: Interfaz de usuario para registrar votos.
+* **`Worker` (Node.js)**: Procesador de votos en segundo plano.
+* **`Result` (Node.js)**: Interfaz de usuario para visualizar resultados.
+
+### Flujo de Datos
+
+1.  El usuario envía un voto a **`Vote` (Flask)** (accesible en el puerto `5000` de la VM, mapeado al `80` del host).
+2.  **`Vote`** guarda el voto en una cola en **Redis** (puerto `6379` en la VM).
+3.  **`Worker`** (puerto `3000` en la VM para métricas) consume votos de la cola de **Redis**.
+4.  **`Worker`** procesa y persiste los votos en la tabla `votes` de **PostgreSQL** (puerto `5432` en la VM).
+5.  **`Result`** (puerto `3001` en la VM) consulta **PostgreSQL** para obtener y exponer los resultados.
+
+### Esquema de la Tabla `votes` en PostgreSQL
+
+```sql
++------------------------+
+|       votes            |
++------------------------+
+| id (PK)       VARCHAR  |  <- Identificador único del votante
+| vote          VARCHAR  |  <- Voto realizado por el usuario (ej. 'a' o 'b')
+| created_at    TIMESTAMP|  <- Marca de tiempo del voto
++------------------------+
+```
+
 ## 📋 Pre-requisitos
 Asegúrate de tener lo siguiente instalado en tu máquina anfitriona (tu notebook):
 
@@ -10,7 +44,7 @@ Asegúrate de tener lo siguiente instalado en tu máquina anfitriona (tu noteboo
 ✅*Ansible*: Para automatizar el despliegue y la configuración.
 ✅*Python 3 y pip*: Para las colecciones de Ansible y gestión de dependencias.
 
-Colecciones de Ansible:
+### Colecciones de Ansible:
 
 ```Bash
 ansible-galaxy collection install community.general
@@ -63,7 +97,6 @@ Paso 1: Clonar el Repositorio e Inicializar la Estructura
 Clona el repositorio en tu máquina anfitriona:
 
 ```Bash
-
 git clone https://github.com/roxsross/roxs-devops-project90.git
 Navega al directorio del proyecto:
 ```
@@ -71,32 +104,34 @@ Navega al directorio del proyecto:
 
 cd roxs-devops-project90
 Crea la estructura de directorios para Ansible (si no existe ya):
+mkdir -p ansible/inventario ansible/group_vars ansible/roles/{common/{tasks,handlers,templates},postgresql/tasks,redis/tasks,flask_vote/{tasks,handlers,templates},nodejs_worker/tasks,nodejs_result/tasks}
 ```
-```Bash
-
-mkdir -p ansible/inventario ansible/group_vars ansible/roles/{common,postgresql,redis,flask_vote/{tasks,handlers,templates},nodejs_worker,nodejs_result}
 Paso 2: Configurar Archivos Clave
 Ahora, crea y edita los archivos esenciales de configuración de Vagrant y Ansible.
 
-Vagrantfile: Define tu máquina virtual. Crea este archivo en la raíz del repositorio (roxs-devops-project90/Vagrantfile).
-```
+**Vagrantfile:** Define tu máquina virtual. Crea este archivo en la raíz del repositorio (roxs-devops-project90/Vagrantfile).
+
 ```Ruby
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "bento/ubuntu-22.04"
+  config.vm.box = "bento/ubuntu-22.04" # ¡Importante: Usar 22.04 para estabilidad!
   config.vm.network "private_network", ip: "192.168.56.10"
+  config.vm.network "forwarded_port", guest: 3001, host: 3001, id: "result_app" # App Result
+  config.vm.network "forwarded_port", guest: 3000, host: 3000, id: "worker_metrics" # App Worker metrics
+  config.vm.network "forwarded_port", guest: 5000, host: 80, id: "vote_app" # App Vote (Guest 5000 -> Host 80)
 
   config.vm.provider "virtualbox" do |vb|
     vb.name = "devops-voting-app-vm"
-    vb.memory = "4096"
-    vb.cpus = 2
+    vb.memory = "4096" # Recomendado: 4GB para todos los servicios
+    vb.cpus = 2        # Recomendado: 2 núcleos de CPU
   end
 
   config.vm.provision "ansible" do |ansible|
     ansible.playbook = "ansible/playbook.yml"
     ansible.verbose = "v"
-    ansible.inventory_path = "ansible/inventario/hosts" # Usa tu inventario custom
-    ansible.limit = "192.168.56.10" # Limita al host específico de tu inventario
+    ansible.inventory_path = "ansible/inventario/hosts"
+    ansible.limit = "192.168.56.10"
+    ansible.config_file = "ansible/ansible.cfg"
   end
 
   config.vm.post_up_message = <<-MSG
@@ -107,20 +142,24 @@ MSG
 end
 ```
 
-ansible.cfg: Configuración global de Ansible. Crea este archivo en la raíz del repositorio (roxs-devops-project90/ansible.cfg).
+**ansible/ansible.cfg:** Configuración global de Ansible. Crea este archivo en la raíz del repositorio (roxs-devops-project90/ansible/ansible.cfg).
 
-Ini, TOML
+```Ini, TOML
 
 [defaults]
-inventory = ansible/inventario/hosts
-roles_path = ansible/roles
-# Si group_vars estuviera dentro de 'inventario', necesitarías:
-# vars_plugins_path = ansible/inventario
-# Pero con la estructura recomendada, 'group_vars' en la raíz del proyecto es suficiente.
-ansible/inventario/hosts: Tu inventario de Ansible.
+inventory = inventario/hosts
+roles_path = roles
+collections_path = /usr/lib/python3/dist-packages/ # Ruta ABSOLUTA donde ansible-galaxy instala colecciones
 
-Ini, TOML
-
+[privilege_escalation]
+become = True
+become_method = sudo
+become_user = root
+become_ask_pass = False
+_tee_use_sudo_nopasswd = False # Solución para 'chmod: invalid mode'
+```
+ansible/inventario/hosts (en ansible/inventario/):
+```YAML
 [webservers]
 192.168.56.10
 
@@ -129,43 +168,49 @@ ansible_python_interpreter=/usr/bin/python3
 ansible_user=vagrant
 # La clave privada por defecto de Vagrant. Vagrant la gestiona, pero es buena práctica tenerla para depuración.
 ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+```
 ansible/group_vars/webservers.yml: Variables para el grupo webservers.
-
-YAML
-
+```YAML
 ---
-# Variables generales del sistema
+# Variables de paquetes del sistema
 system_packages:
   - git
   - curl
   - build-essential
   - python3-venv
+  - python3-virtualenv # Para entornos virtuales Python (pip module)
   - postgresql-client
   - net-tools
+  - python3-psycopg2   # Para que Ansible se conecte a PostgreSQL
+  - acl                # Para ayudar con manejo de permisos avanzados
 
 # Configuración de PostgreSQL
 pg_version: "14"
-pg_user: "dbuser"
-pg_password: "dbpassword"
-pg_db: "votingapp"
+pg_user: "postgres" # Usuario por defecto de PostgreSQL en Ubuntu
+pg_password: "postgres" # Contraseña por defecto (cambiar en producción)
+pg_db: "votes"      # Nombre de la base de datos
+pg_host: "127.0.0.1"
+pg_port: 5432
 
 # Configuración de Redis
 redis_port: 6379
+redis_host: "127.0.0.1"
 
-# Configuración de Node.js (para Worker y Result)
+# Configuración de Node.js
 node_version: "18.x"
 pm2_version: "latest"
 
-# Rutas de la aplicación
-app_base_path: /opt/app
+# Rutas de la aplicación dentro de la VM
+app_base_path: /home/vagrant/app # Directorio base donde se clonará el repo
+app_base_name: roxs-voting-app # Nombre de la carpeta del repo clonado
 
-# Puertos de los servicios (accedidos desde el host)
-vote_app_port: 5000
-worker_app_port: 8001 # Gunicorn/Flask en Vote
-result_app_port: 8000 # App Node.js en Result
-ansible/playbook.yml: El playbook principal que orquesta los roles.
-
-YAML
+# Puertos de los servicios (acceso desde el HOST)
+vote_app_port: 5000   # Puerto de Gunicorn/Flask dentro de la VM
+worker_app_port: 3000 # Puerto del Worker (para métricas, si aplica)
+result_app_port: 3001 # Puerto de la app Result
+```
+ansible/playbook.yml (en ansible/):
+```YAML
 
 ---
 - name: Desplegar entorno de aplicación de votación
@@ -179,13 +224,14 @@ YAML
     - flask_vote
     - nodejs_worker
     - nodejs_result
-Paso 3: Definir los Roles de Ansible
+```
+
+## Paso 3: Definir los Roles de Ansible
 Crea los archivos main.yml dentro de la carpeta tasks/ de cada rol, y si aplica, los templates/ y handlers/.
 
 ansible/roles/common/tasks/main.yml:
 
-YAML
-
+```YAML
 ---
 - name: Actualizar caché de apt
   ansible.builtin.apt:
@@ -196,9 +242,14 @@ YAML
     name: "{{ system_packages }}"
     state: present
 
+- name: Asegurar que el paquete 'acl' esté instalado
+  ansible.builtin.apt:
+    name: acl
+    state: present
+
 - name: Instalar Node.js y npm (usando NodeSource PPA)
   ansible.builtin.shell: |
-    curl -fsSL https://deb.nodesource.com/setup_{{ node_version }} | sudo -E bash -
+    curl -fsSL [https://deb.nodesource.com/setup](https://deb.nodesource.com/setup)_{{ node_version }} | sudo -E bash -
     sudo apt-get install -y nodejs
   args:
     executable: /bin/bash
@@ -209,10 +260,18 @@ YAML
     name: pm2
     global: yes
     state: present
+
+- name: Clonar el repositorio de la app
+  ansible.builtin.git:
+    repo: "{{ repo }}" # Variable 'repo' de group_vars
+    dest: "{{ app_base_path }}/{{ app_base_name }}" # Clona en /home/vagrant/app/roxs-voting-app
+    version: main # Asegúrate de que esta sea la rama correcta (o 'master')
+    force: yes
+  become_user: "{{ ansible_user }}" # Usuario 'vagrant'
+```
 ansible/roles/postgresql/tasks/main.yml:
 
-YAML
-
+```YAML
 ---
 - name: Instalar PostgreSQL
   ansible.builtin.apt:
@@ -227,22 +286,23 @@ YAML
     enabled: yes
 
 - name: Crear usuario de base de datos para la app
-  ansible.builtin.community.postgresql.postgresql_user:
+  community.postgresql.postgresql_user:
     db: postgres
     name: "{{ pg_user }}"
     password: "{{ pg_password }}"
     state: present
-  become_user: postgres
+  become_user: postgres # Ejecuta esta tarea como el usuario 'postgres'
 
 - name: Crear base de datos para la app
-  ansible.builtin.community.postgresql.postgresql_db:
+  community.postgresql.postgresql_db:
     name: "{{ pg_db }}"
     owner: "{{ pg_user }}"
     state: present
-  become_user: postgres
+  become_user: postgres # Ejecuta esta tarea como el usuario 'postgres'
+```
 ansible/roles/redis/tasks/main.yml:
 
-YAML
+```YAML
 
 ---
 - name: Instalar Redis
@@ -256,25 +316,16 @@ YAML
     name: redis-server
     state: started
     enabled: yes
+```
 ansible/roles/flask_vote/tasks/main.yml:
 
-YAML
-
----
-- name: Clonar el repositorio de la aplicación
-  ansible.builtin.git:
-    repo: https://github.com/roxsross/roxs-devops-project90.git
-    dest: "{{ app_base_path }}" # Clona en la ruta base de la app
-    version: master
-    force: yes
-  become_user: vagrant
-
+```YAML---
 - name: Instalar dependencias de Python para Flask Vote
   ansible.builtin.pip:
-    requirements: "{{ app_base_path }}/vote/requirements.txt"
-    virtualenv: "{{ app_base_path }}/vote/.venv"
+    requirements: "{{ app_base_path }}/{{ app_base_name }}/vote/requirements.txt"
+    virtualenv: "{{ app_base_path }}/{{ app_base_name }}/vote/.venv"
     virtualenv_python: python3
-  become_user: vagrant
+  become_user: "{{ ansible_user }}"
 
 - name: Crear script de inicio para Flask Vote (Gunicorn)
   ansible.builtin.template:
@@ -291,9 +342,10 @@ YAML
     state: started
     enabled: yes
     daemon_reload: yes
+```
 Crea la plantilla para el servicio Flask Vote:
 ansible/roles/flask_vote/templates/vote_app.service.j2:
-
+>
 Fragmento de código
 
 [Unit]
@@ -315,9 +367,10 @@ PrivateTmp=true
 [Install]
 WantedBy=multi-user.target
 Crea el handler para Flask Vote:
+<
 ansible/roles/flask_vote/handlers/main.yml:
 
-YAML
+```YAML
 
 ---
 - name: Reload systemd
@@ -328,74 +381,71 @@ YAML
   ansible.builtin.systemd:
     name: vote_app
     state: restarted
+```
 ansible/roles/nodejs_worker/tasks/main.yml:
 
-YAML
-
+```YAML
 ---
 - name: Instalar dependencias de Node.js para Worker
   ansible.builtin.community.general.npm:
-    path: "{{ app_base_path }}/worker"
+    path: "{{ app_base_path }}/{{ app_base_name }}/worker"
     state: present
-    # Añadir esto para asegurar la instalación sin interacción
-    ci: yes
+    ci: no # Asegura que use 'npm install' en lugar de 'npm ci' si package-lock.json no existe
 
 - name: Crear script de inicio para Node.js Worker con PM2
   ansible.builtin.shell: |
-    pm2 start index.js --name worker-app
+    pm2 start main.js --name worker-app
     pm2 save
   args:
-    chdir: "{{ app_base_path }}/worker"
+    chdir: "{{ app_base_path }}/{{ app_base_name }}/worker"
     executable: /bin/bash
   environment:
-    PGHOST: 127.0.0.1
+    PGHOST: "{{ pg_host }}"
     PGUSER: "{{ pg_user }}"
     PGPASSWORD: "{{ pg_password }}"
     PGDATABASE: "{{ pg_db }}"
-    REDIS_HOST: 127.0.0.1
+    PGPORT: "{{ pg_port }}" # Añadido PGPORT
+    REDIS_HOST: "{{ redis_host }}"
     REDIS_PORT: "{{ redis_port }}"
-  become_user: vagrant
-
-- name: Asegurar que PM2 esté configurado para iniciar al arranque
-  ansible.builtin.shell: |
-    pm2 startup systemd -u vagrant --hp /home/vagrant
-    pm2 save
-  args:
-    executable: /bin/bash
-  become: yes
+  become_user: "{{ ansible_user }}" # Usar el usuario 'vagrant'
+```
 ansible/roles/nodejs_result/tasks/main.yml:
 
-YAML
-
+```YAML
 ---
 - name: Instalar dependencias de Node.js para Result
   ansible.builtin.community.general.npm:
-    path: "{{ app_base_path }}/result"
+    path: "{{ app_base_path }}/{{ app_base_name }}/result"
     state: present
-    ci: yes
+    ci: no # Asegura que use 'npm install' en lugar de 'npm ci' si package-lock.json no existe
 
 - name: Crear script de inicio para Node.js Result con PM2
   ansible.builtin.shell: |
-    pm2 start index.js --name result-app -- -p {{ result_app_port }}
+    pm2 start main.js --name result-app -- -p {{ result_app_port }} # El puerto se pasa como ENV, no CLI
     pm2 save
   args:
-    chdir: "{{ app_base_path }}/result"
+    chdir: "{{ app_base_path }}/{{ app_base_name }}/result"
     executable: /bin/bash
   environment:
-    PGHOST: 127.0.0.1
+    PGHOST: "{{ pg_host }}"
     PGUSER: "{{ pg_user }}"
     PGPASSWORD: "{{ pg_password }}"
     PGDATABASE: "{{ pg_db }}"
-  become_user: vagrant
-Paso 4: Levantar y Provisionar la VM
+    PGPORT: "{{ pg_port }}" # Añadido PGPORT
+    APP_PORT: "{{ result_app_port }}" # Puerto de la aplicación Result
+  become_user: "{{ ansible_user }}" # Usar el usuario 'vagrant'
+```
+## Paso 4: Levantar y Provisionar la VM
 Desde la raíz de tu repositorio (roxs-devops-project90), ejecuta el siguiente comando:
 
-Bash
+```Bash
 
 vagrant up
+```
+
 Este comando levantará la máquina virtual y ejecutará automáticamente el playbook de Ansible para provisionarla con todos los servicios.
 
-Paso 5: Validar el Flujo de Datos
+## Paso 5: Validar el Flujo de Datos
 Una vez que vagrant up haya terminado exitosamente:
 
 Acceder a la aplicación Vote:
@@ -410,10 +460,12 @@ Deberías ver los resultados de las votaciones reflejados. Esto confirma que los
 
 Verificar servicios (Opcional - Vía SSH a la VM):
 Puedes conectarte a la VM para inspeccionar el estado de los servicios:
-
-Bash
+```
+```Bash
 
 vagrant ssh
+```
+
 Dentro de la VM, puedes usar:
 
 sudo systemctl status postgresql
