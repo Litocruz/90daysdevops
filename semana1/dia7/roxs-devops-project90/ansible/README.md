@@ -474,6 +474,20 @@ sudo systemctl status redis-server
 
 sudo systemctl status vote_app
 
+## TODO
+
+I've identified several key points and inconsistencies that need to be addressed to ensure a smooth deployment. These include:
+
+VM Resource Allocation: Your Vagrantfile's memory and CPU are a bit low for all services.
+
+Application Pathing: There's an inconsistency in how app_base_path and app_base_name are used for cloning the repository and then referencing the sub-applications.
+
+Node.js Port Handling: Passing ports directly to pm2 start via -p can be problematic if the Node.js apps expect them as environment variables.
+
+PostgreSQL Port for Worker: The nodejs_worker role's environment variables were missing PGPORT.
+
+Forwarded Ports in Vagrantfile: Clarified the mapping for better understanding.
+
 pm2 list (para ver las apps worker-app y result-app)
 
 pm2 logs (para ver los logs consolidados)
