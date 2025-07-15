@@ -8,7 +8,7 @@
 
 - name: Crear script de inicio para Node.js Worker con PM2
   shell: |
-    pm2 start main.js --name worker-app -p {{ worker_app_port }}
+    pm2 start main.js --name worker-app
     pm2 save
   args:
     chdir: "{{ app_base_path }}/{{ app_base_name }}/worker"
@@ -20,6 +20,7 @@
     DATABASE_NAME: "{{ pg_db }}"
     REDIS_HOST: "{{ redis_host }}"
     REDIS_PORT: "{{ redis_port }}"
+    PGPORT: "{{ pg_port }}"
   become_user: vagrant
 
 - name: Asegurar que PM2 esté configurado para iniciar al arranque
