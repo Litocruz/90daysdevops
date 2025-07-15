@@ -7,7 +7,7 @@
 
 - name: Crear script de inicio para Node.js Result con PM2
   shell: |
-    pm2 start main.js --name result-app -- -p {{ result_app_port }}
+    pm2 start main.js --name result-app
     pm2 save
   args:
     chdir: "{{ app_base_path }}/{{ app_base_name }}/result"
