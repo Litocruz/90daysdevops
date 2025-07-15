@@ -66,21 +66,21 @@ Clona el repositorio en tu máquina anfitriona:
 
 git clone https://github.com/roxsross/roxs-devops-project90.git
 Navega al directorio del proyecto:
-
-Bash
+```
+```Bash
 
 cd roxs-devops-project90
 Crea la estructura de directorios para Ansible (si no existe ya):
-
-Bash
+```
+```Bash
 
 mkdir -p ansible/inventario ansible/group_vars ansible/roles/{common,postgresql,redis,flask_vote/{tasks,handlers,templates},nodejs_worker,nodejs_result}
 Paso 2: Configurar Archivos Clave
 Ahora, crea y edita los archivos esenciales de configuración de Vagrant y Ansible.
 
 Vagrantfile: Define tu máquina virtual. Crea este archivo en la raíz del repositorio (roxs-devops-project90/Vagrantfile).
-
-Ruby
+```
+```Ruby
 
 Vagrant.configure("2") do |config|
   config.vm.box = "bento/ubuntu-22.04"
