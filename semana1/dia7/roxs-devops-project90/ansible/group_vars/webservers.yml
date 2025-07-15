@@ -38,6 +38,6 @@ app_base_name: roxs-voting-app
 
 # Puertos de los servicios (accedidos desde el host)
 vote_app_port: 5000 # Gunicorn/Flask en Vote
-worker_app_port: 3000 
+worker_app_port: 3000 # Puerto del Worker (para métricas, si aplica)
 result_app_port: 3001 # App Node.js en Result
 ...
