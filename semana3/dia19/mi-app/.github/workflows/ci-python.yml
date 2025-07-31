@@ -1,0 +1,46 @@
+name: CI Básico Python
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Instalar dependencias
+      run: |
+        pip install -r requirements.txt
+
+    - name: Ejecutar tests
+      run: |
+        pytest tests/ -v
+
+    - name: Ejecutar con cobertura
+      run: |
+        pytest --cov=app --cov-report=term --cov-report=html
+
+    - name: Guardar reporte
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: htmlcov/
+
+
+    - name: Verificar app corriendo
+      run: |
+        timeout 10 python app.py &
+        sleep 5
+        curl -f http://localhost:5000/health
+
